@@ -1,0 +1,508 @@
+* CimaView3D
+
+CimaView3D is a visualization tool that successfully balances standardization and
+customization for seismic data analysis.
+
+** Table Of Contents
+
+- [[Installation]]
+- [[Tutorial]]
+  - [[Loading a data file]]
+  - [[Plotting the data in its original aspect]]
+  - [[Plotting the data as a cube]]
+  - [[Plotting multiple colormap schemes at once]]
+  - [[Using the function =surface_intersections=]]
+  - [[Creating different cross-sections with the data]]
+  - [[Making different visual customizations]]
+  - [[Placing an annotation]]
+  - [[Creating markers]]
+  - [[Creating a grid at the surface of the data with =surface_grid=]]
+- [[List of Current Functions]]
+  - [[create_markers]]
+  - [[create_slices]]
+  - [[surface_grid]]
+  - [[surface_intersections]]
+  - [[plot3D]]
+
+* Installation
+
+CimaView3D needs the CIGVis package, to install it run:
+
+#+BEGIN_SRC python
+pip install "cigvis[plotly]"
+#+END_SRC
+
+After that, you have to copy the CimaView3D.py and import it to the scope of the
+development environment:
+
+#+BEGIN_SRC python
+import CimaView3D as cima
+#+END_SRC
+
+* Tutorial
+
+You can follow the tutorial through this [[file:tutorial.ipynb][ipynb file]]
+
+** Loading a data file
+
+Example for the =.sgy= file in this tutorial
+
+#+BEGIN_SRC python
+import segyio
+import numpy as np
+
+# Path to the data file
+filename = 'Seismic_data.sgy'
+# Initialize an empty dictionary to store trace data with (iline, xline) as keys
+trace_dict = {}
+
+with segyio.open(filename, "r", ignore_geometry=True) as segyfile:
+    # Take inline and xline from header
+    for trace_index in range(segyfile.tracecount):
+        iline = segyfile.header[trace_index][segyio.TraceField.INLINE_3D]
+        xline = segyfile.header[trace_index][segyio.TraceField.CROSSLINE_3D]
+
+        # Read the Traces
+        trace = segyfile.trace[trace_index]
+
+        # Store the traces with (inline, xline) as main keys
+        trace_dict[(iline, xline)] = trace
+
+# Search for the ranges of the inlines and the xlines to define array's dimentions
+ilines = sorted(set(key[0] for key in trace_dict.keys()))
+xlines = sorted(set(key[1] for key in trace_dict.keys()))
+
+# Get the number of samples per trace from one trace (assuming all traces have the same length)
+num_samples = len(next(iter(trace_dict.values())))
+
+# Initialize the 3D array: iline (axis 0), xline (axis 1), sample (axis 2)
+# Use np.nan to represent missing data
+data = np.full((len(ilines), len(xlines), num_samples), np.nan)
+
+# Fill the 3D array with trace data, skipping missing iline-xline pairs
+for i, iline in enumerate(ilines):
+    for j, xline in enumerate(xlines):
+        if (iline, xline) in trace_dict:
+            data[i, j, :] = trace_dict[(iline, xline)]
+
+# this data has some disturbances after x>600, so we cut it
+seismic_data = data[:600,:,:]
+#+END_SRC
+
+Another example, now for a =.bin= file:
+
+#+BEGIN_SRC python
+import numpy as np
+nz = 524
+nx = 251
+ny = 31
+pathf = 'seismic_data.bin'
+file = np.fromfile(pathf,dtype="float32")
+seismic_data = np.reshape(file,(ny,nx,nz))
+del(file)
+#+END_SRC
+
+** Plotting the data in its original aspect
+
+#+BEGIN_SRC python
+# creating the slices
+node = cima.create_slices(
+    seismic_data, cmap='seismic'
+)
+# set the distance from the camera
+eye=dict(x=1.1,y=1.1,z=1.1)
+# set the plot a little up in the display
+center=dict(x=0,y=0,z=-.3)
+# ploting
+cima.plot3D(
+    node,
+    # aspect of the data is the same as the original shape
+    aspect='data',
+    eye=eye,
+    center=center,
+    # set the size of the display window
+    size=[600,900]
+)
+#+END_SRC
+
+*** Result
+
+[[file:imgs/n-data.png]]
+
+** Plotting the data as a cube
+
+#+BEGIN_SRC python
+node = cima.create_slices(seismic_data, cmap='seismic')
+center=dict(x=0,y=0,z=-.16)
+cima.plot3D(node, center=center)
+#+END_SRC
+
+*** Result
+
+[[file:imgs/n-cube.png]]
+
+
+** Plotting multiple colormap schemes at once
+
+#+BEGIN_SRC python
+node0 = cima.create_slices(
+    seismic_data, show_cbar=False, cmap='seismic'
+)
+node1 = cima.create_slices(
+    seismic_data, show_cbar=False, cmap='grey'
+)
+node2 = cima.create_slices(
+    seismic_data, show_cbar=False
+)
+center=dict(x=0,y=-0.1,z=-.16)
+eye=dict(x=1.45,y=1.45,z=1.45) # distance
+cima.plot3D(
+    [node0, node1, node2], # list of subplots
+    cols=3,                # number of subplots by line
+    size=[400,1200],       # height and width
+    center=center,
+    eye=eye
+)
+#+END_SRC
+
+*** Result
+
+[[file:imgs/n-cols.png]]
+
+** Using the function =surface_intersections=
+
+#+BEGIN_SRC python
+dx=100
+dy=100
+
+# creates a list of intersectioning points on surface
+pontos = cima.surface_intersections(seismic_data, dx, dy)
+
+node1 = cima.create_slices(
+    seismic_data, cmap='seismic'
+)
+node_with_points = cima.create_markers(
+    node1, points=pontos,
+    name="Intersectioning points on surface",
+    color="blue", group="source")
+center=dict(x=0,y=-0.1,z=-.16)
+
+cima.plot3D(node_with_points,
+            size=[700,750],
+            center=center)
+#+END_SRC
+
+*** Result
+
+[[file:imgs/n-points.png]]
+
+** Creating different cross-sections with the data
+
+#+BEGIN_SRC python
+# Get the values of the dimentions of the axes
+x_size, y_size, z_size = seismic_data.shape
+
+# Get the values at the center of the axes
+s_central_x = x_size // 2
+s_central_y = y_size // 2
+s_central_z = z_size // 2
+
+# set the positions of the slices to the central of each axis
+seismic_data_node1 = cima.create_slices(
+    seismic_data, cmap='seismic', show_cbar=False,
+    pos={
+        'x': [s_central_x],
+        'y': [s_central_y],
+        'z': [s_central_z]}
+)
+
+# in the z axis set 3 slices, instead of 2
+s_central_z2 = z_size // 4
+seismic_data_node2 = cima.create_slices(
+    seismic_data, cmap='seismic', cbar_position='below',
+    pos={'x': [s_central_x],
+        'y': [s_central_y],
+        'z': [s_central_z2, s_central_z2*2,s_central_z2*3]},
+)
+center=dict(x=0,y=-0.1,z=-.16)
+eye=dict(x=1.4,y=1.4,z=1.4)
+# Plot
+cima.plot3D([seismic_data_node1,seismic_data_node2],eye=eye, center=center, size=[600,1000])
+#+END_SRC
+
+*** Result
+
+[[file:imgs/n-slices.png]]
+
+** Making different visual customizations
+
+#+BEGIN_SRC python
+node = cima.create_slices(
+    seismic_data,
+    cmap='seismic',
+    cbar_params={'title':"Seismic"},
+)
+center=dict(x=0,y=0,z=-.06)
+eye=dict(x=1.32,y=1.32,z=1.32)
+cima.plot3D( node,
+    font_size=14,
+    # z axis settings
+    z_label="Depth",
+    z_autorange=True,
+    z_tickvals=[0, 50, 100, 150, 200, 300,400, 500],
+    y_tickvals=[0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
+    eye=eye,
+    center=center,
+    # grid settings
+    show_grid=True,
+    x_bgcolor='rgba(255,0,0,0.3)',
+    y_bgcolor='rgba(0,255,0,0.3)',
+    z_bgcolor='rgba(0,0,255,0.3)'
+)
+#+END_SRC
+
+*** Result
+
+[[file:imgs/n-bund.png]]
+
+** Placing an annotation
+
+#+BEGIN_SRC python
+node = cima.create_slices(
+    seismic_data, cmap='seismic',
+    bar_position='below'
+)
+center=dict(x=0,y=-0.1,z=-.16)
+annotations=[dict(
+    x=20,
+    y=100,
+    z=40,
+    text="Point",
+    textangle=0,
+    ax=0,
+    ay=-75,
+    font=dict(
+    color="black",
+    size=12
+    ),
+    arrowcolor="black",
+    arrowsize=3,
+    arrowwidth=1,
+    arrowhead=1
+)]
+cima.plot3D(node,
+    annotations=annotations, center=center,
+)
+#+END_SRC
+
+*** Result
+
+[[file:imgs/n-annotations.png]]
+
+** Creating markers
+
+#+BEGIN_SRC python
+# Get the values of the dimentions of the axes
+x_size, y_size, z_size = seismic_data.shape
+
+# Get the values at the center of the axes
+s_central_x = x_size // 2
+s_central_y = y_size // 2
+s_central_z = z_size // 2
+
+# set the positions of the slices to the central of each axis
+seismic_data_node1 = cima.create_slices(
+    seismic_data, cmap='seismic', show_cbar=False,
+    pos={
+        'x': [s_central_x],
+        'y': [s_central_y],
+        'z': [s_central_z]}
+)
+
+# in the z axis set 3 slices, instead of 2
+s_central_z2 = z_size // 4
+seismic_data_node2 = cima.create_slices(
+    seismic_data, cmap='seismic', cbar_position='below',
+    pos={'x': [s_central_x],
+        'y': [s_central_y],
+        'z': [s_central_z2, s_central_z2*2,s_central_z2*3]},
+)
+
+# list of three points, given each axis its values
+x=[30,20, 10]
+y=[0,60,20]
+z=[0,60,20]
+
+# adding points to the first subplot
+markers_node1 = cima.create_markers(
+    seismic_data_node1, x=x, y=y, z=z,
+    text=["something", "another thing", "more 1"], name="Markers at subplot 1",
+    color="blue", group="receiver")
+
+# defining a point as a <x,y,z> tuple
+x=20
+y=200
+z=60
+points2=[[x,y,z]]
+
+# adding the new point as a marker in the second subplot
+new_markers_node2 = cima.create_markers(
+    seismic_data_node2, points=points2, text=["anything"], name="A marker at subplot 2",
+    color="red", group="source")
+
+# adding the same markers from subplot 1 in node2
+points3= [[30,0,0],[20,60,60],[10,20,20]]
+markers_node2 = cima.create_markers(
+    new_markers_node2, points=points3,
+    text=["something2", "another thing2"], name="Same suplot 1 markers at suplot 2",
+    color="blue", group="receiver")
+
+center=dict(x=0,y=-0.1,z=-.16)
+eye=dict(x=1.4,y=1.4,z=1.4)
+# Plot
+cima.plot3D([markers_node1,markers_node2],eye=eye,center=center,size=[600,1000])
+#+END_SRC
+
+*** Result
+
+[[file:imgs/n-markers.png]]
+
+** Creating a grid at the surface of the data with =surface_grid=
+
+#+BEGIN_SRC python
+dx=100
+dy=100
+
+# create markers with points at the grid intersection
+points = cima.surface_intersections(seismic_data, dx, dy)
+
+# grid receives the data and creates the grid at the surface
+grid = cima.surface_grid(seismic_data, dx, dy)
+
+node1 = cima.create_slices(
+    seismic_data, cmap='seismic'
+)
+node_with_grid = cima.create_slices(
+    grid, show_cbar=False, cmap='seismic'
+)
+
+node2 = cima.create_slices(
+    grid, cbar_position='below', cmap='seismic'
+)
+node_with_points = cima.create_markers(
+    node2, points=points,
+    name="Intersectioning points on surface",
+    color="blue", group="source"
+)
+center=dict(x=0,y=-0.1,z=-.16)
+eye=dict(x=1.4,y=1.4,z=1.4)
+
+cima.plot3D(
+    [node_with_grid, node_with_points], size=[600,1000], eye=eye, center=center
+)
+#+END_SRC
+
+*** Result
+
+[[file:imgs/n-grids.png]]
+
+** reset
+
+#+BEGIN_SRC python
+%reset -f #if you want to reset the environment, cleaning import, variables, and so on to the next cell to clean
+#+END_SRC
+
+* List of Current Functions
+
+** =create_markers=
+
+|--------------+--------+----------------------------------------+-----------|
+| *Parameter*  | *Type* | *Description*                          | *Default* |
+|--------------+--------+----------------------------------------+-----------|
+| =traces=     |        | list of traces                         | necessary |
+| =x=          | List   | position at the x axis                 | []        |
+| =y=          | List   | position at the y axis                 | []        |
+| =z=          | List   | position at the z axis                 | []        |
+| =points=     | List   | dicionário contendo ⟨x, y, z⟩          | None      |
+| =size=       | float  | size of the marker                     | 8         |
+| =symbol=     | str    | symbol of the marker                   | ’circle’  |
+| =color=      | str    | color of the marker                    | ‘blue’    |
+| =line_width= | float  | line width of the border of the marker | 2         |
+| =group=      | str    | the marker's group name                | ‘’        |
+| =name=       | str    | text for the marker in the legend      | ‘’        |
+| =text=       | str    | hover text for the marker              | ‘’        |
+|--------------+--------+----------------------------------------+-----------|
+| =traces=     | List   |                                        | return    |
+|--------------+--------+----------------------------------------+-----------|
+
+** =create_slices=
+
+|-----------------+-----------------+-----------------------------+--------------|
+| *Parameter*     | *Type*          | *Description*               | *Default*    |
+|-----------------+-----------------+-----------------------------+--------------|
+| =volume=        | np.ndarray      | 3D array                    | necessário   |
+| =pos=           | List ou Dict    | positions for the slices    | None         |
+| =clim=          | List [min,max]  | color limits for the plot   | None         |
+| =cmap=          | str ou Colormap | colormap                    | ‘Petrel’     |
+| =scale=         | float           | scale                       | 1            |
+| =show_cbar=     | True/False      | show/hide colorbar          | True         |
+| =cbar_params=   | Dict            | parameters for the colorbar | None         |
+| =cbar_position= | str             | position of the colorbar    | to the right |
+| =type=          | str             | type of slices              | ‘faces’      |
+|-----------------+-----------------+-----------------------------+--------------|
+| =volume=        | np.ndarray      |                             | return       |
+|-----------------+-----------------+-----------------------------+--------------|
+
+** =surface_grid=
+
+|-------------+--------+----------------+-----------|
+| *Parameter* | *Type* | *Description*  | *Default* |
+|-------------+--------+----------------+-----------|
+| =traces=    | List   | list of traces | necessary |
+| =dx=        | int    | variation in x | necessary |
+| =dy=        | int    | variation in y | necessary |
+|-------------+--------+----------------+-----------|
+| =traces=    | List   |                | return    |
+|-------------+--------+----------------+-----------|
+
+** =surface_intersections=
+
+|-------------+--------+----------------+-----------|
+| *Parameter* | *Type* | *Description*  | *Default* |
+|-------------+--------+----------------+-----------|
+| =traces=    | List   | list of traces | necessary |
+| =dx=        | int    | variation in x | necessary |
+| =dy=        | int    | variation in y | necessary |
+|-------------+--------+----------------+-----------|
+| =points=    | List   |                | return    |
+|-------------+--------+----------------+-----------|
+
+** =plot3D=
+
+|---------------+----------------------+-------------------------------------------+------------|
+| *Parameter*   | *Type*               | *Description*                             | *Default*  |
+|---------------+----------------------+-------------------------------------------+------------|
+| =traces=      | List                 | list of traces                            | necessary  |
+| =aspect=      | str                  | data aspect (‘data’/‘cube’)               | ‘cube’     |
+| =font_size=   | float                | tamaho dos textos                         | 12         |
+| =show_grid=   | True/False           | mostrar grade ao fundo do gráfico         | False      |
+| =x_label=     | str                  | label for the x axis                      | None       |
+| =y_label=     | str                  | label for the y axis                      | None       |
+| =z_label=     | str                  | label for the z axis                      | None       |
+| =x_bgcolor=   | str                  | background color for the x axis           | None       |
+| =y_bgcolor=   | str                  | background color for the y axis           | None       |
+| =z_bgcolor=   | str                  | background color for the z axis           | None       |
+| =x_autorange= | str                  | autorange for the x axis                  | ‘reversed’ |
+| =y_autorange= | str                  | autorange for the y axis                  | ‘reversed’ |
+| =z_autorange= | str                  | autorange for the z axis                  | ‘reversed’ |
+| =show_legend= | bool                 | show/hide legends                         | True       |
+| =size=        | List [height, width] | size of the display window                | None       |
+| =cols=        | int                  | number of columns per row                 | None       |
+| =eye=         | Dict                 | camera distance from the axes             | None       |
+| =up=          | Dict                 | tells which axis is up for the camera     | None       |
+| =center=      | Dict                 | centering of the plot                     | None       |
+| =camera=      | Dict                 | dictionary containing eye, up, and center | None       |
+| =annotations= | List                 | list of annotation dictionaries           | None       |
+|---------------+----------------------+-------------------------------------------+------------|
+| Visualization |                      |                                           | return     |
+|---------------+----------------------+-------------------------------------------+------------|
