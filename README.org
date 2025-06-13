@@ -29,7 +29,7 @@ customization for seismic data analysis.
 CimaView3D needs the CIGVis package, to install it run:
 
 #+BEGIN_SRC python
-pip install "cigvis[plotly]"
+!pip install "cigvis[plotly]"
 #+END_SRC
 
 After that, you have to copy the CimaView3D.py and import it to the scope of the
@@ -45,7 +45,8 @@ You can follow the tutorial through this [[file:tutorial.ipynb][ipynb file]]
 
 ** Loading a data file
 
-Example for the =.sgy= file in this tutorial
+Example for the =.sgy= file in this tutorial. 
+Note: You must have the =segyio= package imported to the environment.
 
 #+BEGIN_SRC python
 import segyio
