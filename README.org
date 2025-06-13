@@ -423,7 +423,7 @@ cima.plot3D(
 | =x=          | List   | position at the x axis                 | []        |
 | =y=          | List   | position at the y axis                 | []        |
 | =z=          | List   | position at the z axis                 | []        |
-| =points=     | List   | dicionário contendo ⟨x, y, z⟩          | None      |
+| =points=     | List   | list containing [x, y, z] lists'       | None      |
 | =size=       | float  | size of the marker                     | 8         |
 | =symbol=     | str    | symbol of the marker                   | ’circle’  |
 | =color=      | str    | color of the marker                    | ‘blue’    |
@@ -437,21 +437,21 @@ cima.plot3D(
 
 ** =create_slices=
 
-|-----------------+-----------------+-----------------------------+--------------|
-| *Parameter*     | *Type*          | *Description*               | *Default*    |
-|-----------------+-----------------+-----------------------------+--------------|
-| =volume=        | np.ndarray      | 3D array                    | necessário   |
-| =pos=           | List ou Dict    | positions for the slices    | None         |
-| =clim=          | List [min,max]  | color limits for the plot   | None         |
-| =cmap=          | str ou Colormap | colormap                    | ‘Petrel’     |
-| =scale=         | float           | scale                       | 1            |
-| =show_cbar=     | True/False      | show/hide colorbar          | True         |
-| =cbar_params=   | Dict            | parameters for the colorbar | None         |
-| =cbar_position= | str             | position of the colorbar    | to the right |
-| =type=          | str             | type of slices              | ‘faces’      |
-|-----------------+-----------------+-----------------------------+--------------|
-| =volume=        | np.ndarray      |                             | return       |
-|-----------------+-----------------+-----------------------------+--------------|
+|-----------------+-----------------+---------------------------------------------------+--------------|
+| *Parameter*     | *Type*          | *Description*                                     | *Default*    |
+|-----------------+-----------------+---------------------------------------------------+--------------|
+| =volume=        | np.ndarray      | 3D array                                          | necessary    |
+| =pos=           | List ou Dict    | positions for the slices                          | None         |
+| =clim=          | List [min,max]  | color limits for the plot                         | None         |
+| =cmap=          | str ou Colormap | colormap                                          | ‘Petrel’     |
+| =scale=         | float           | scale                                             | 1            |
+| =show_cbar=     | True/False      | show/hide colorbar                                | True         |
+| =cbar_params=   | Dict            | parameters for the colorbar                       | None         |
+| =cbar_position= | str             | position of the colorbar (top/bottom/left/right)  | 'right'      |
+| =type=          | str             | type of slices                                    | ‘faces’      |
+|-----------------+-----------------+---------------------------------------------------+--------------|
+| =volume=        | np.ndarray      |                                                   | return       |
+|-----------------+-----------------+---------------------------------------------------+--------------|
 
 ** =surface_grid=
 
@@ -485,7 +485,7 @@ cima.plot3D(
 | =traces=      | List                 | list of traces                            | necessary  |
 | =aspect=      | str                  | data aspect (‘data’/‘cube’)               | ‘cube’     |
 | =font_size=   | float                | tamaho dos textos                         | 12         |
-| =show_grid=   | True/False           | mostrar grade ao fundo do gráfico         | False      |
+| =show_grid=   | True/False           | show/hide grid                            | False      |
 | =x_label=     | str                  | label for the x axis                      | None       |
 | =y_label=     | str                  | label for the y axis                      | None       |
 | =z_label=     | str                  | label for the z axis                      | None       |
