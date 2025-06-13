@@ -447,7 +447,7 @@ cima.plot3D(
 | =scale=         | float           | scale                                             | 1            |
 | =show_cbar=     | True/False      | show/hide colorbar                                | True         |
 | =cbar_params=   | Dict            | parameters for the colorbar                       | None         |
-| =cbar_position= | str             | position of the colorbar (top/bottom/left/right)  | 'right'      |
+| =cbar_position= | str             | position of the colorbar (below/above/left/right) | 'right'      |
 | =type=          | str             | type of slices                                    | ‘faces’      |
 |-----------------+-----------------+---------------------------------------------------+--------------|
 | =volume=        | np.ndarray      |                                                   | return       |
