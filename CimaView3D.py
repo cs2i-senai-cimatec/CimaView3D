@@ -5,7 +5,7 @@
 
 # CimaView3D https://github.com/cs2i-senai-cimatec/CimaView3D
 # Copyright (c) 2025 Darlan Anschau
-# CIMATEC - Salvador - BA - Brazil 
+# CIMATEC - Salvador - BA - Brazil
 
 # All rights reserved
 
@@ -98,20 +98,21 @@ def create_slices(volume: np.ndarray,
     cbar_params : Dict
         parameters pass to colorbar
 
-    type
+    type : str
+        type of pos (default 'faces')
 
     Returns
     -------
     traces : List
         List of go.Surface
     """
-    
+
     if cbar_params is None:
         cbar_params={
             'title': 'Min/Max',
             'orientation': 'v'
-        }       
-    
+        }
+
     cbar_position = kwargs.get('cbar_position')
     if cbar_position is not None:
         if cbar_position=='below':
@@ -121,7 +122,7 @@ def create_slices(volume: np.ndarray,
             cbar_params['orientation']='h'
         elif cbar_position=='left':
             cbar_params['x']=-.1
-            
+
     if type == 'faces' and pos is None:
         x_size, y_size, z_size = volume.shape
         pos=[[0, x_size-1], [0, y_size-1], [0, z_size-1]]
@@ -149,24 +150,24 @@ def create_slices(volume: np.ndarray,
     slices, pos = plotlyutils.make_slices(volume, pos=pos)
 
     dimname = dict(x='inline', y='crossline', z='time')
-                      
+
     if cmap == 'jet-alpha':
-        cmap = [[0.0, 'rgba(0,0,131,1)'], 
-                [0.2, 'rgba(0,60,170,1)'], 
-                [0.4, 'rgba(5,255,255,1)'], 
-                [0.5, 'rgba(0,255,0, 0)'], 
-                [0.6, 'rgba(255,255,0, 1)'], 
-                [0.8, 'rgba(250,0,0, 1)'], 
+        cmap = [[0.0, 'rgba(0,0,131,1)'],
+                [0.2, 'rgba(0,60,170,1)'],
+                [0.4, 'rgba(5,255,255,1)'],
+                [0.5, 'rgba(0,255,0, 0)'],
+                [0.6, 'rgba(255,255,0, 1)'],
+                [0.8, 'rgba(250,0,0, 1)'],
                 [1.0, 'rgba(128,0,0, 1)']]
     elif cmap == 'empty':
-        cmap = [[0.0, 'rgba(0,0,131,0)'], 
-                [0.5, 'rgba(0,255,0, 0)'], 
+        cmap = [[0.0, 'rgba(0,0,131,0)'],
+                [0.5, 'rgba(0,255,0, 0)'],
                 [1.0, 'rgba(128,0,0, 0)']]
     else:
         cmap = colormap.cmap_to_plotly(cmap)
-    
+
     traces = []
-  
+
     idx = 0
     for dim in ['x', 'y', 'z']:
         assert len(slices[dim]) == len(pos[dim])
@@ -211,6 +212,19 @@ def plot3D(traces,
            title: str = '',
            show_legend: bool = True,
            **kwargs):
+    """
+    Parameters
+    ----------
+    aspect : str
+        data aspect
+    show_grid : bool
+
+
+    Returns
+    -------
+    traces : List
+        List of go.Surface
+    """
 
     size = kwargs.get('size', (900, 900))
     size = (size, size) if isinstance(size, (int, np.integer)) else size
@@ -220,7 +234,7 @@ def plot3D(traces,
     scened = plotlyutils.make_3Dscene(**kwargs)
     for k, v in scened.items():
         scene.setdefault(k, v)
-       
+
     cols=1
     rows=1
     if isinstance(traces[0], list):
@@ -246,7 +260,7 @@ def plot3D(traces,
                 shared_yaxes=True,
                 horizontal_spacing=0,
                 vertical_spacing=.1,
-                rows=rows, 
+                rows=rows,
                 cols=cols,
                 specs=specs
                 )
@@ -258,7 +272,7 @@ def plot3D(traces,
             fig = go.Figure(data=traces[0])
     else:
         fig = go.Figure(data=traces)
-    
+
     #axes
     x_label = kwargs.get('x_label')
     y_label = kwargs.get('y_label')
@@ -346,7 +360,7 @@ def plot3D(traces,
 
     annotations = kwargs.get('annotations')
     if annotations is not None:
-        scene['annotations'] = annotations            
+        scene['annotations'] = annotations
     camera = kwargs.get('camera')
     if camera is None:
         camera = dict(
@@ -365,24 +379,6 @@ def plot3D(traces,
     center = kwargs.get('center')
     if center is not None:
         camera['center'] = center
-    
-    fig.update_annotations(
-            x=30,
-            y=1,
-            z=4,
-            text="Point 2",
-            textangle=0,
-            ax=0,
-            ay=-75,
-            font=dict(
-                color="black",
-                size=12
-            ),
-            arrowcolor="black",
-            arrowsize=3,
-            arrowwidth=1,
-            arrowhead=1
-    )
 
     fig.update_layout(
         # title=title,
@@ -393,7 +389,7 @@ def plot3D(traces,
         scene1=scene,
         margin=dict(l=0, r=0, t=0, b=0),
         showlegend=show_legend,
-        
+
         legend={
             "orientation":"h",
             "x": 0.7,
@@ -412,28 +408,10 @@ def plot3D(traces,
         exec("fig.update_layout(scene" + str(i) +"_camera = camera)")
 
     savequality = kwargs.get('savequality', 1)
-    
+
     fig.update_scenes(
         aspectmode=aspect
     )
-
-    alpha = kwargs.get('alpha')
-    if alpha:
-        colsc = fig["data"][0]["colorscale"]
-        new=[[]]
-        flag=False
-        for cs in colsc:
-            if cs[0] > 0.49 and flag == False:
-                new.append([0.5,'rgba(0,255,0, 0)'])
-                new.append(cs)
-                flag = True
-            else:
-                new.append(cs)
-        new.pop(0)
-        
-
-        for f in range(len(fig["data"])):
-            fig["data"][f]["colorscale"]  = new
 
     fig.show(
         config={
@@ -495,7 +473,6 @@ def create_markers(traces,
                     marker=dict(
                                 size=8,
                                 symbol=marker_symbol,
-                                # angle=45,
                                 line=dict(
                                     color=color,
                                     width=line_width
@@ -511,8 +488,140 @@ def create_markers(traces,
 
     return traces
 
+def create_sources(traces,
+                x = [],
+                y = [],
+                z = [],
+                text = '★',
+                size = 24,
+                name = "",
+                **kwargs):
+
+    if 'points' in kwargs:
+        ponto_marcador = kwargs.get('points')
+        if isinstance(ponto_marcador, dict):
+            x=ponto_marcador['x']
+            y=ponto_marcador['y']
+            z=ponto_marcador['z']
+        elif len(ponto_marcador) > 0:
+            x=[]
+            y=[]
+            z=[]
+            for ponto in ponto_marcador:
+                x.append(ponto[0])
+                y.append(ponto[1])
+                z.append(ponto[2])
+        else:
+            x=ponto_marcador[0]
+            y=ponto_marcador[1]
+            z=ponto_marcador[2]
+
+    traces.append(
+        go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            text=text,
+            textposition='middle center',
+            textfont=dict(
+                color='red',  # Set the text color to red
+                weight="normal",
+                size=size
+            ),
+            mode="text",
+            name=name,
+            showlegend=False,
+        )
+    )
+    text="☆"
+    traces.append(
+        go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            text=text,
+            textposition='middle center',
+            textfont=dict(
+                color='black',  # Set the text color to red
+                weight='bold',
+                size=size
+            ),
+            mode="text",
+            name=name,
+            showlegend=False,
+        )
+    )
+
+    return traces
+
+def create_receivers(traces,
+                x = [],
+                y = [],
+                z = [],
+                text="▼",
+                size = 24,
+                name = "",
+                **kwargs):
+
+    if 'points' in kwargs:
+        ponto_marcador = kwargs.get('points')
+        if isinstance(ponto_marcador, dict):
+            x=ponto_marcador['x']
+            y=ponto_marcador['y']
+            z=ponto_marcador['z']
+        elif len(ponto_marcador) > 0:
+            x=[]
+            y=[]
+            z=[]
+            for ponto in ponto_marcador:
+                x.append(ponto[0])
+                y.append(ponto[1])
+                z.append(ponto[2])
+        else:
+            x=ponto_marcador[0]
+            y=ponto_marcador[1]
+            z=ponto_marcador[2]
+
+    traces.append(
+        go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            text=text,
+            textposition='middle center',
+            textfont=dict(
+                color='blue',  # Set the text color to red
+                weight="normal",
+                size=size
+            ),
+            mode="text",
+            name=name,
+            showlegend=False,
+        )
+    )
+    text="▿"
+    traces.append(
+        go.Scatter3d(
+            x=x,
+            y=y,
+            z=z,
+            text=text,
+            textposition='middle center',
+            textfont=dict(
+                color='black',  # Set the text color to red
+                weight='bold',
+                size=size
+            ),
+            mode="text",
+            name=name,
+            showlegend=False,
+        )
+    )
+
+    return traces
+
 def surface_grid(traces,
-                dx, 
+                dx,
                 dy,
                 **kwargs):
 
@@ -531,21 +640,22 @@ def surface_grid(traces,
             new_data[j][i*dy][0]=max_value
 
     return new_data
-        
+
 
 def surface_intersections(traces,
-                dx, 
+                dx,
                 dy,
+				z: int = 0,
                 **kwargs):
 
     x_size, y_size, z_size = traces.shape
     xs = x_size // dx
     ys = y_size // dy
-    pontos=[[]]
+    pontos=[[0,0,0]]
     for i in range(1,xs):
         for j in range(1,ys):
-            pontos.append([i*dx,j*dy,0])
-    pontos.pop(0)            
+            pontos.append([i*dx,j*dy,z])
+    pontos.pop(0)
 
     return pontos
 
@@ -572,7 +682,7 @@ def cut(traces,
         from_x: int = 0, to_x: int = 0,
         from_y: int = 0, to_y: int = 0,
         from_z: int = 0, to_z: int = 0):
-    
+
     x_size, y_size, z_size = traces.shape
 
     if to_x == 0:
