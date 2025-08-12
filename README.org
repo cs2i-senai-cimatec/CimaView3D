@@ -32,8 +32,9 @@ CimaView3D needs the CIGVis package, to install it run:
 !pip install "cigvis[plotly]"
 #+END_SRC
 
-After that, you have to copy the CimaView3D.py and import it to the scope of the
-development environment:
+*IMPORTANT*: After that, you have to copy the file named =CimaView3D.py= and
+import the CimaView3D package into the scope of the development environment:
+
 
 #+BEGIN_SRC python
 import CimaView3D as cima
