@@ -33,7 +33,7 @@ CimaView3D needs the CIGVis package, to install it run:
 #+END_SRC
 
 *IMPORTANT*: After that, you have to copy the file named =CimaView3D.py= and
-import the CimaView3D package into the scope of the development environment:
+import the CimaView3D package to bring it into scope:
 
 
 #+BEGIN_SRC python
