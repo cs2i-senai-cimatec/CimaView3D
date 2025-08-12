@@ -407,6 +407,47 @@ cima.plot3D(
 
 [[file:imgs/n-grids.png]]
 
+** Setting Sources and Receivers
+
+#+BEGIN_SRC python
+# Get the values of the dimentions of the axes
+x_size, y_size, z_size = seismic_data.shape
+ 
+dx=64
+dy=64
+zp=100
+ 
+# create markers with points at the grid intersection
+sources = cima.surface_intersections(seismic_data, dx, dy)
+receivers = cima.surface_intersections(seismic_data, dx, dy, z=zp)
+ 
+# Get the values at the center of the axes
+s_central_x = x_size // 2
+s_central_y = y_size // 2
+s_central_z1 = 1 #z_size // 2
+
+
+vel_data_node1 = cima.create_slices(
+    seismic_data, cmap='seismic', show_cbar=True,
+    pos={
+        'x': [s_central_x],
+        'y': [s_central_y],
+        'z': []}
+)
+
+node_with_points = cima.create_sources(vel_data_node1, points=sources, size=24)
+node_with_points = cima.create_receivers(node_with_points, points=receivers)
+ 
+center=dict(x=0,y=-0.1,z=-.16)
+
+cima.plot3D([node_with_points], center=center, z_label='Profundidade') 
+#+END_SRC
+
+*** Result
+
+[[file:imgs/velocity-SR.png]]
+
+
 ** reset
 
 #+BEGIN_SRC python
@@ -424,7 +465,7 @@ cima.plot3D(
 | =x=          | List   | position at the x axis                 | []        |
 | =y=          | List   | position at the y axis                 | []        |
 | =z=          | List   | position at the z axis                 | []        |
-| =points=     | List   | list containing [x, y, z] lists'       | None      |
+| =points=     | List   | list containing [x, y, z] lists        | None      |
 | =size=       | float  | size of the marker                     | 8         |
 | =symbol=     | str    | symbol of the marker                   | ’circle’  |
 | =color=      | str    | color of the marker                    | ‘blue’    |
@@ -453,6 +494,30 @@ cima.plot3D(
 |-----------------+-----------------+---------------------------------------------------+--------------|
 | =volume=        | np.ndarray      |                                                   | return       |
 |-----------------+-----------------+---------------------------------------------------+--------------|
+
+** =create_sources=
+
+|-------------+--------+---------------------------------+-----------|
+| *Parameter* | *Type* | *Description*                   | *Default* |
+|-------------+--------+---------------------------------+-----------|
+| =traces=    | List   | list of traces                  | necessary |
+| =points=    | List   | list containing [x, y, z] lists | necessary |
+| =size=      | float  | size of the sources             | 24        |
+|-------------+--------+---------------------------------+-----------|
+| =traces=    | List   |                                 | return    |
+|-------------+--------+---------------------------------+-----------|
+
+** =create_receivers=
+
+|-------------+--------+---------------------------------+-----------|
+| *Parameter* | *Type* | *Description*                   | *Default* |
+|-------------+--------+---------------------------------+-----------|
+| =traces=    | List   | list of traces                  | necessary |
+| =points=    | List   | list containing [x, y, z] lists | necessary |
+| =size=      | float  | size of the receivers           | 24        |
+|-------------+--------+---------------------------------+-----------|
+| =traces=    | List   |                                 | return    |
+|-------------+--------+---------------------------------+-----------|
 
 ** =surface_grid=
 
